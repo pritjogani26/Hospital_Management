@@ -154,19 +154,17 @@ $$ LANGUAGE plpgsql;
 
 
 
-CREATE OR REPLACE FUNCTION get_doctor_profile(
-    p_doctor_id INT
+CREATE OR REPLACE FUNCTION get_doctors_list(
+    p_search TEXT DEFAULT NULL,
+    p_gender_id INT DEFAULT NULL,
+    p_qualification_id INT DEFAULT NULL
 )
 RETURNS TABLE (
     doctor_id INT,
     full_name VARCHAR,
-    experience_years NUMERIC,
     gender VARCHAR,
-    phone_number VARCHAR,
     email VARCHAR,
     consultation_fee NUMERIC,
-    profile_image VARCHAR,
-    joining_date DATE,
     qualifications TEXT[]
 ) AS $$
 BEGIN
@@ -174,20 +172,29 @@ BEGIN
     SELECT
         d.doctor_id,
         d.full_name,
-        d.experience_years,
         g.gender_value,
-        d.phone_number,
         d.email,
         d.consultation_fee,
-        d.profile_image,
-        d.joining_date,
-        ARRAY_AGG(q.qualification_code ORDER BY q.qualification_code)
+        COALESCE(ARRAY_AGG(DISTINCT q.qualification_code ORDER BY q.qualification_code), ARRAY[]::text[])
     FROM doctors d
     LEFT JOIN genders g ON g.gender_id = d.gender_id
     LEFT JOIN doctor_qualifications dq ON dq.doctor_id = d.doctor_id
     LEFT JOIN qualifications q ON q.qualification_id = dq.qualification_id
-    WHERE d.doctor_id = p_doctor_id
-      AND d.is_active = TRUE
-    GROUP BY d.doctor_id, g.gender_value;
+    WHERE d.is_active = TRUE
+      AND (p_search IS NULL OR p_search = '' OR (
+           d.full_name ILIKE '%' || p_search || '%'
+           OR d.email ILIKE '%' || p_search || '%'
+           OR d.doctor_id ILIKE '%' || p_search || '%'
+       ))
+      AND (p_gender_id IS NULL OR d.gender_id = p_gender_id)
+      AND (
+           p_qualification_id IS NULL OR EXISTS (
+               SELECT 1 FROM doctor_qualifications dq2
+               WHERE dq2.doctor_id = d.doctor_id
+                 AND dq2.qualification_id = p_qualification_id
+           )
+      )
+    GROUP BY d.doctor_id, g.gender_value
+    ORDER BY d.full_name;
 END;
 $$ LANGUAGE plpgsql;

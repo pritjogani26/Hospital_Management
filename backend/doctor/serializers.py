@@ -87,3 +87,12 @@ class DoctorProfileSerializer(serializers.Serializer):
     profile_image = serializers.CharField(allow_null=True)
     joining_date = serializers.DateField(allow_null=True)
     qualifications = serializers.ListField(child=serializers.CharField())
+
+
+class DoctorListSerializer(serializers.Serializer):
+    doctor_id = serializers.IntegerField()
+    full_name = serializers.CharField()
+    gender = serializers.CharField(allow_null=True)
+    email = serializers.EmailField(allow_null=True)
+    consultation_fee = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+    qualifications = serializers.ListField(child=serializers.CharField())
