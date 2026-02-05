@@ -26,6 +26,9 @@ const Navbar = () => {
                 <Link to="/patients/details">View Patients</Link>
               </li>
               <li>
+                <Link to="/doctor/list">Doctors</Link>
+              </li>
+              <li>
                 <Link to="/user/profile">Profile</Link>
               </li>
               <button onClick={logout} className="logout-btn" type="button">

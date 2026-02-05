@@ -17,6 +17,7 @@ import EmailVerification from "./users/EmailVerification";
 import ChangePassword from "./users/ChangePassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer } from "react-toastify";
+import DoctorList from "./doctor/DoctorList";
 
 function App() {
   return (
@@ -27,6 +28,14 @@ function App() {
         <Route path="/user/register" element={<Register />} />
         <Route path="/user/login" element={<Login />} />
         <Route path="/user/verify-email" element={<EmailVerification />} />
+        <Route
+          path="/doctor/list"
+          element={
+            <ProtectedRoute>
+              <DoctorList />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected routes - require authentication */}
         <Route
