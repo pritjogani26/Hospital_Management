@@ -4,6 +4,21 @@ CREATE TABLE genders (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+create OR REPLACE function get_genders()
+RETURNS TABLE (
+    gender_id INT,
+    gender_value INT,
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        g.gender_id,
+        g.gender_value
+    FROM genders g
+END;
+$$ LANGUAGE plpgsql;
+
+
 drop table qualifications;
 CREATE TABLE qualifications (
     qualification_id SERIAL PRIMARY KEY,
@@ -12,6 +27,23 @@ CREATE TABLE qualifications (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+create OR REPLACE function get_qualifications()
+RETURNS TABLE (
+    qualification_id INT,
+    qualification_code VARCHAR,
+    qualification_name VARCHAR
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        q.qualification_id,
+        q.qualification_code,
+        q.qualification_name
+    FROM qualifications q
+    WHERE q.is_active = TRUE;
+END;
+$$ LANGUAGE plpgsql;
 
 drop table doctors;
 CREATE TABLE doctors (
@@ -22,7 +54,7 @@ CREATE TABLE doctors (
     phone_number VARCHAR(15) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE,
     consultation_fee NUMERIC(10,2),
-    profile_image VARCHAR(255),
+    profile_image VARCHAR(255) DEFAULT '/media/defaults/patient.png',
     is_active BOOLEAN DEFAULT TRUE,
     joining_date DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -86,7 +118,7 @@ BEGIN
         p_phone_number,
         p_email,
         p_consultation_fee,
-        p_profile_image,
+        COALESCE(p_profile_image, '/media/defaults/patient.png'),
         p_joining_date
     )
     RETURNING doctor_id INTO v_doctor_id;
@@ -105,8 +137,6 @@ EXCEPTION
         RETURN -99;  -- unknown error
 END;
 $$ LANGUAGE plpgsql;
-
-
 
 CREATE OR REPLACE FUNCTION update_doctor_profile(
     p_doctor_id INT,
@@ -153,12 +183,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-
-CREATE OR REPLACE FUNCTION get_doctors_list(
-    p_search TEXT DEFAULT NULL,
-    p_gender_id INT DEFAULT NULL,
-    p_qualification_id INT DEFAULT NULL
-)
+CREATE OR REPLACE FUNCTION get_doctors_list()
 RETURNS TABLE (
     doctor_id INT,
     full_name VARCHAR,
@@ -181,20 +206,19 @@ BEGIN
     LEFT JOIN doctor_qualifications dq ON dq.doctor_id = d.doctor_id
     LEFT JOIN qualifications q ON q.qualification_id = dq.qualification_id
     WHERE d.is_active = TRUE
-      AND (p_search IS NULL OR p_search = '' OR (
-           d.full_name ILIKE '%' || p_search || '%'
-           OR d.email ILIKE '%' || p_search || '%'
-           OR d.doctor_id ILIKE '%' || p_search || '%'
-       ))
-      AND (p_gender_id IS NULL OR d.gender_id = p_gender_id)
-      AND (
-           p_qualification_id IS NULL OR EXISTS (
-               SELECT 1 FROM doctor_qualifications dq2
-               WHERE dq2.doctor_id = d.doctor_id
-                 AND dq2.qualification_id = p_qualification_id
-           )
-      )
     GROUP BY d.doctor_id, g.gender_value
     ORDER BY d.full_name;
 END;
 $$ LANGUAGE plpgsql;
+
+
+-- SELECT register_doctor('Dr. Chirag Dumaniya', 2, 1, '9879879870', 'chirag@gmail.com', 500, '/media/defaults/patient.png', '2025-01-01', ARRAY[1]);
+-- SELECT register_doctor('Dr. Mehul Patel', 5, 1, '9988776655', 'mehul@gmail.com', 800, '/media/defaults/patient.png', '2024-06-15', ARRAY[1,2]);
+-- SELECT register_doctor('Dr. Riya Shah', 3, 2, '9090909090', 'riya@gmail.com', 600, '/media/defaults/patient.png', '2023-03-10', ARRAY[4]);
+-- SELECT register_doctor('Dr. Hardik Joshi', 7, 1, '9123456789', 'hardik@gmail.com', 400, '/media/defaults/patient.png', '2022-07-20', ARRAY[7]);
+-- SELECT register_doctor('Dr. Sneha Trivedi', 4, 2, '9345678123', 'sneha@gmail.com', 450, '/media/defaults/patient.png', '2021-11-05', ARRAY[8]);
+-- SELECT register_doctor('Dr. Kunal Desai', 6, 1, '9012345678', 'kunal@gmail.com', 900, '/media/defaults/patient.png', '2020-09-18', ARRAY[1,3]);
+-- SELECT register_doctor('Dr. Neha Vyas', 8, 2, '9898989898', 'neha@gmail.com', 750, '/media/defaults/patient.png', '2019-04-22', ARRAY[2]);
+-- SELECT register_doctor('Dr. Amit Bhatt', 10, 1, '9765432109', 'amit@gmail.com', 1000, '/media/defaults/patient.png', '2018-02-14', ARRAY[1,5]);
+-- SELECT register_doctor('Dr. Pooja Mehta', 5, 2, '9456123789', 'pooja@gmail.com', 650, '/media/defaults/patient.png', '2021-08-30', ARRAY[4,6]);
+-- SELECT register_doctor('Dr. Raj Malhotra', 12, 1, '9234567812', 'raj@gmail.com', 1100, '/media/defaults/patient.png', '2017-12-05', ARRAY[1,2,5]); 

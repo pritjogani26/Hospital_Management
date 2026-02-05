@@ -106,21 +106,8 @@ class DoctoreList(generics.GenericAPIView):
     serializer_class = DoctorListSerializer
 
     def get(self, request: HttpRequest):
-        search: str = request.query_params.get("search")
-        gender_id = request.query_params.get("gender_id")
-        qualification_id = request.query_params.get("qualification_id")
-
-        if search is not None and search.strip() == "":
-            search = None
-        if gender_id is not None and gender_id.strip() == "":
-            gender_id = None
-        if qualification_id is not None and qualification_id.strip() == "":
-            qualification_id = None
-
-        params = [search, gender_id, qualification_id]
-
         try:
-            result = fetch_all("SELECT * FROM get_doctor_profile(%s, %s, %s)", params)
+            result = fetch_all("SELECT * FROM get_doctor_profile()")
         except Exception as e:
             print(f"\nError : {e}")
             return Response(
