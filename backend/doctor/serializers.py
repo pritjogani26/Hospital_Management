@@ -94,5 +94,18 @@ class DoctorListSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     gender = serializers.CharField(allow_null=True)
     email = serializers.EmailField(allow_null=True)
-    consultation_fee = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+    consultation_fee = serializers.DecimalField(
+        max_digits=10, decimal_places=2, allow_null=True
+    )
     qualifications = serializers.ListField(child=serializers.CharField())
+
+
+class GenderSerializer(serializers.Serializer):
+    gender_id = serializers.IntegerField()
+    gender_value = serializers.CharField()
+
+
+class QualificationSerializer(serializers.Serializer):
+    qualification_id = serializers.IntegerField()
+    qualification_code = serializers.CharField()
+    qualification_name = serializers.CharField()

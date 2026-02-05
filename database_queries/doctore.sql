@@ -7,14 +7,14 @@ CREATE TABLE genders (
 create OR REPLACE function get_genders()
 RETURNS TABLE (
     gender_id INT,
-    gender_value INT,
+    gender_value VARCHAR
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT
         g.gender_id,
         g.gender_value
-    FROM genders g
+    FROM genders g;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -183,6 +183,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
+drop function get_doctors_list;
 CREATE OR REPLACE FUNCTION get_doctors_list()
 RETURNS TABLE (
     doctor_id INT,
@@ -200,7 +201,7 @@ BEGIN
         g.gender_value,
         d.email,
         d.consultation_fee,
-        COALESCE(ARRAY_AGG(DISTINCT q.qualification_code ORDER BY q.qualification_code), ARRAY[]::text[])
+        COALESCE(ARRAY_AGG(DISTINCT q.qualification_code::TEXT ORDER BY q.qualification_code::TEXT), ARRAY[]::text[])
     FROM doctors d
     LEFT JOIN genders g ON g.gender_id = d.gender_id
     LEFT JOIN doctor_qualifications dq ON dq.doctor_id = d.doctor_id

@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from users.authentication import JWTAuthentication
 from .serializers import (
     DoctorListSerializer,
+    GenderSerializer,
+    QualificationSerializer,
     RegisterDoctorSerializer,
     UpdateDoctorSerializer,
     DoctorProfileSerializer,
@@ -100,6 +102,41 @@ class DoctorProfile(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class GenderList(generics.GenericAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = GenderSerializer
+
+    def get(self, request: HttpRequest):
+        try:
+            rows = fetch_all("SELECT * FROM get_genders()", [])
+            # print(rows)
+            serializer = self.get_serializer(rows, many=True)
+            # print(serializer.data)
+            return Response(serializer.data or [], status=status.HTTP_200_OK)
+        except Exception as e:
+            print(str(e))
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class QualificationList(generics.GenericAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = QualificationSerializer
+
+    def get(self, request: HttpRequest):
+        try:
+            rows = fetch_all("SELECT * FROM get_qualifications()", [])
+            serializer = self.get_serializer(rows, many=True)
+            return Response(serializer.data or [], status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class DoctoreList(generics.GenericAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -107,7 +144,7 @@ class DoctoreList(generics.GenericAPIView):
 
     def get(self, request: HttpRequest):
         try:
-            result = fetch_all("SELECT * FROM get_doctor_profile()")
+            result = fetch_all("SELECT * FROM get_doctors_list()", [])
         except Exception as e:
             print(f"\nError : {e}")
             return Response(
