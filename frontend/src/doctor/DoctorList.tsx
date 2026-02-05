@@ -15,9 +15,15 @@ type DoctorListProps = {
 };
 
 type GenderProps = {
-    gender_id : number;
-    genderva
-}
+  gender_id: number;
+  gender_value: string;
+};
+
+type QualificationsProps = {
+  qualification_id: number;
+  qualification_code: string;
+  qualification_name: string;
+};
 
 const debounce = (func: Function, delay: number) => {
   let timeout: any;
@@ -32,11 +38,13 @@ const debounce = (func: Function, delay: number) => {
 
 const ViewPatients = () => {
   const navigate = useNavigate();
+  
   const [doctors, setDoctors] = useState<DoctorListProps[]>([]);
+  const [genders, setGenders] = useState<GenderProps[]>([]);
+  const [qualifications, setQualifications] = useState<QualificationsProps[]>([]);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [search, setSearch] = useState<string>("");
-  const [genders, setGenders] = useState<string>();
-  const [qualifications, setQualifications] = useState<string>("all");
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(5);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -61,9 +69,7 @@ const ViewPatients = () => {
     }
   };
 
-  const appy_filter = async (s: string, g: number, q: number) => {
-
-  }
+  const appy_filter = async (s: string, g: number, q: number) => {};
 
   useEffect(() => {
     setLoading(true);
@@ -71,7 +77,7 @@ const ViewPatients = () => {
   }, []);
 
   useEffect(() => {
-    debounceRef.current = debounce((s: string, g: string, q: string ) => {
+    debounceRef.current = debounce((s: string, g: string, q: string) => {
       setPage(1);
       appy_filter(s, g, q);
     }, 500);
