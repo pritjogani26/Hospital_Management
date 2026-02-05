@@ -7,7 +7,7 @@ from users.user_service.jwt_utils import decode_token
 from rest_framework.exceptions import AuthenticationFailed
 
 
-class RequestValidationMiddleware(MiddlewareMixin):
+class RequestValidationMiddvleware(MiddlewareMixin):
 
     ALLOWED_CONTENT_TYPES = [
         "application/json",
