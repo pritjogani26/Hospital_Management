@@ -1,106 +1,118 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import api from "../api/axios";
+import { Doctor, Gender, Qualification } from "./types";
+import queryString from "query-string";
 import "./css/ViewPatients.css";
-import ToastService from "../utils/toastService";
 
-type DoctorListProps = {
-  doctor_id: number;
-  full_name: string;
-  email: string | null;
-  gender: string | null;
-  qualifications: string | null;
-  consultation_fee: string | null;
-};
+const PAGE_SIZE = 5;
+const MAX_FETCH_LIMIT = 1000000;
 
-type GenderProps = {
-  gender_id: number;
-  gender_value: string;
-};
+export default function DoctorListPage() {
+  const [allDoctors, setAllDoctors] = useState<Doctor[]>([]);
+  const [genders, setGenders] = useState<Gender[]>([]);
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
 
-type QualificationsProps = {
-  qualification_id: number;
-  qualification_code: string;
-  qualification_name: string;
-};
+  const [search, setSearch] = useState("");
+  const [genderId, setGenderId] = useState<number | null>(null);
+  const [qualificationId, setQualificationId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
-const debounce = (func: Function, delay: number) => {
-  let timeout: any;
+  const [loading, setLoading] = useState(true);
 
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      func(...args);
-    }, delay);
-  };
-};
+  const debounceRef = useRef<number | null>(null);
+  const [pendingSearch, setPendingSearch] = useState("");
 
-const ViewPatients = () => {
-  const navigate = useNavigate();
-  
-  const [doctors, setDoctors] = useState<DoctorListProps[]>([]);
-  const [genders, setGenders] = useState<GenderProps[]>([]);
-  const [qualifications, setQualifications] = useState<QualificationsProps[]>([]);
+  /* ---------------- FETCH DATA ONLY ON LOAD ---------------- */
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [search, setSearch] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(5);
-  const [totalCount, setTotalCount] = useState<number>(0);
+  useEffect(() => {
+    async function fetchAll() {
+      try {
+        setLoading(true);
 
-  const debounceRef = useRef<
-    ((search: string, gender: string, qualifications: string) => void) | null
-  >(null);
+        const doctors = await api.get<Doctor[]>("/doctor/list/", {
+          params: { limit: MAX_FETCH_LIMIT, offset: 0 },
+        });
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        const gendersRes = await api.get<Gender[]>("/doctor/genders/");
+        const qualRes =
+          await api.get<Qualification[]>("/doctor/qualifications/");
 
-  const fetchDoctorsList = async () => {
-    try {
-      console.log("Fetching Doctore details.");
-      const res = await api.get("/doctor/display/");
-      setDoctors(res.data.data || []);
-    } catch (error: any) {
-      const msg = error?.response?.data?.error ?? "Failed to load doctors";
-      console.log(msg);
-      ToastService.error(msg);
-    } finally {
-      setLoading(false);
+        setAllDoctors(doctors.data || []);
+        setGenders(gendersRes.data || []);
+        setQualifications(qualRes.data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
-  };
 
-  const appy_filter = async (s: string, g: number, q: number) => {};
-
-  useEffect(() => {
-    setLoading(true);
-    fetchDoctorsList();
+    fetchAll();
   }, []);
 
+  /* ---------------- SEARCH DEBOUNCE ---------------- */
+
   useEffect(() => {
-    debounceRef.current = debounce((s: string, g: string, q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = window.setTimeout(() => {
+      setSearch(pendingSearch);
       setPage(1);
-      appy_filter(s, g, q);
-    }, 500);
-  }, []);
+    }, 400);
 
-  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setQuery(value);
-    debounceRef.current?.(value, category);
-  };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [pendingSearch]);
 
-  const onCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    console.log("Category changed to:", value);
-    setCategory(value);
-    debounceRef.current?.(query, value);
-  };
+  /* ---------------- FILTER + SORT ---------------- */
+
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+
+    return allDoctors.filter((d) => {
+      if (
+        searchLower &&
+        !(
+          d.full_name.toLowerCase().includes(searchLower) ||
+          (d.email ?? "").toLowerCase().includes(searchLower)
+        )
+      )
+        return false;
+
+      if (genderId) {
+        const g = genders.find((x) => x.gender_id === genderId);
+        if (g && d.gender !== g.gender_value) return false;
+      }
+
+      if (qualificationId) {
+        const q = qualifications.find(
+          (x) => x.qualification_id === qualificationId,
+        );
+        if (q && !d.qualifications?.includes(q.qualification_code))
+          return false;
+      }
+
+      return true;
+    });
+  }, [allDoctors, search, genderId, qualificationId, genders, qualifications]);
+
+  /* ---------------- PAGINATION ---------------- */
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
   const gotoPage = (p: number) => {
     if (p < 1 || p > totalPages) return;
     setPage(p);
-    fetchPatientsList(query, category, p);
   };
+
+  /* ---------------- UI ---------------- */
 
   if (loading)
     return (
@@ -110,39 +122,61 @@ const ViewPatients = () => {
         </div>
       </div>
     );
+
   return (
     <div className="view-patients-container">
       <div className="view-patients-content">
-        <h2>Patients List</h2>
+        <h2>Doctors List</h2>
+
+        {/* SEARCH + FILTER */}
         <div className="search-filter-row">
           <div className="searchBar">
             <input
               type="search"
-              placeholder="Search Patients By ID, Name, or Email"
-              name="searchValue"
-              id="searchValue"
-              value={query}
-              onChange={onSearchChange}
+              placeholder="Search Doctors"
+              value={pendingSearch}
+              onChange={(e) => setPendingSearch(e.target.value)}
             />
           </div>
+
           <div className="filter-category">
             <select
-              name="categoryValue"
-              id="categoryValue"
-              value={category}
-              onChange={onCategoryChange}
+              value={genderId ?? ""}
+              onChange={(e) =>
+                setGenderId(e.target.value ? Number(e.target.value) : null)
+              }
             >
-              <option value="all" defaultChecked>
-                All
-              </option>
-              <option value="A">Active</option>
-              <option value="D">Deleted</option>
+              <option value="">All Genders</option>
+              {genders.map((g) => (
+                <option key={g.gender_id} value={g.gender_id}>
+                  {g.gender_value}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-category">
+            <select
+              value={qualificationId ?? ""}
+              onChange={(e) =>
+                setQualificationId(
+                  e.target.value ? Number(e.target.value) : null,
+                )
+              }
+            >
+              <option value="">All Qualifications</option>
+              {qualifications.map((q) => (
+                <option key={q.qualification_id} value={q.qualification_id}>
+                  {q.qualification_code}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {patients.length === 0 ? (
-          <p className="no-patients">No Patient Found</p>
+        {/* TABLE */}
+        {paginated.length === 0 ? (
+          <p className="no-patients">No Doctor Found</p>
         ) : (
           <div className="table-wrapper">
             <table className="patients-table">
@@ -151,102 +185,34 @@ const ViewPatients = () => {
                   <th>ID</th>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Mobile</th>
                   <th>Gender</th>
-                  <th>Actions</th>
+                  <th>Fee</th>
+                  <th>Qualifications</th>
                 </tr>
               </thead>
+
               <tbody>
-                {patients.map((patient) => (
-                  <tr key={patient.patient_id}>
-                    <td>{patient.patient_id}</td>
-                    <td>{patient.patient_name}</td>
-                    <td>{patient.email ?? "N/A"}</td>
-                    <td>{patient.mobile ?? "N/A"}</td>
-                    <td>
-                      {patient.gender === "M"
-                        ? "Male"
-                        : patient.gender === "F"
-                          ? "Female"
-                          : (patient.gender ?? "N/A")}
-                    </td>
-                    <td>
-                      <div className="patient-actions">
-                        <button
-                          type="button"
-                          className="btn btn-details"
-                          onClick={() =>
-                            navigate(`/patients/details/${patient.patient_id}`)
-                          }
-                        >
-                          Details
-                        </button>
-                        {(patient.status === "A" && (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-update1"
-                              onClick={() =>
-                                navigate(
-                                  `/patients/update/${patient.patient_id}`,
-                                )
-                              }
-                            >
-                              Update
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-delete1"
-                              onClick={() =>
-                                navigate(
-                                  `/patients/delete/${patient.patient_id}`,
-                                )
-                              }
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )) || (
-                          <>
-                            <button
-                              type="button"
-                              className="btn btn-update1"
-                              disabled
-                              onClick={() =>
-                                navigate(
-                                  `/patients/update/${patient.patient_id}`,
-                                )
-                              }
-                            >
-                              Update
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-delete1"
-                              disabled
-                              onClick={() =>
-                                navigate(
-                                  `/patients/delete/${patient.patient_id}`,
-                                )
-                              }
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+                {paginated.map((doc) => (
+                  <tr key={doc.doctor_id}>
+                    <td>{doc.doctor_id}</td>
+                    <td>{doc.full_name}</td>
+                    <td>{doc.email ?? "N/A"}</td>
+                    <td>{doc.gender ?? "N/A"}</td>
+                    <td>{doc.consultation_fee ?? "N/A"}</td>
+                    <td>{doc.qualifications?.join(", ")}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+
+        {/* PAGINATION */}
         <div className="pagination-meta">
           <p>
-            Showing {patients.length} of {totalCount} (Page {page} of{" "}
-            {totalPages})
+            Showing {paginated.length} of {total} (Page {page} of {totalPages})
           </p>
+
           <div className="pagination-controls">
             <button
               className="btn btn-page"
@@ -258,10 +224,10 @@ const ViewPatients = () => {
 
             {Array.from({ length: Math.min(5, totalPages) }).map((_, idx) => {
               let start = Math.max(1, Math.min(page - 2, totalPages - 4));
-              if (totalPages <= 5) {
-                start = 1;
-              }
+              if (totalPages <= 5) start = 1;
+
               const pnum = start + idx;
+
               return (
                 <button
                   key={pnum}
@@ -272,6 +238,7 @@ const ViewPatients = () => {
                 </button>
               );
             })}
+
             <button
               className="btn btn-page"
               onClick={() => gotoPage(page + 1)}
@@ -284,6 +251,4 @@ const ViewPatients = () => {
       </div>
     </div>
   );
-};
-
-export default ViewPatients;
+}
