@@ -1,0 +1,73 @@
+/* auth_frontend\src\components\Navbar.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 2rem;
+  background: linear-gradient(90deg, #0f172a, #1e293b);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Logo */
+.logo {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: white;
+  text-decoration: none;
+}
+
+/* Center links */
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.8rem;
+  align-items: center; /* 🔄 CHANGED: align items vertically */
+}
+
+/* Links */
+.nav-links a {
+  color: #e5e7eb;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+  color: #38bdf8;
+}
+
+/* 🔄 CHANGED: Logout button styled like nav links */
+.logout-btn {
+  background: none;          /* 🔄 CHANGED */
+  border: none;              /* 🔄 CHANGED */
+  padding: 0;                /* 🔄 CHANGED */
+  margin: 0;                 /* 🔄 CHANGED */
+  cursor: pointer;           /* 🔄 CHANGED */
+  color: #e5e7eb;            /* 🔄 CHANGED */
+  font-size: 1rem;           /* 🔄 CHANGED */
+  font-weight: 500;          /* 🔄 CHANGED */
+  font-family: inherit;      /* 🔄 CHANGED */
+  transition: color 0.3s ease; /* 🔄 CHANGED */
+}
+
+/* Hover consistency */
+.logout-btn:hover {
+  color: #38bdf8; /* 🔄 CHANGED */
+}
+
+.navbar-right {
+  display: flex;
+  gap: 0.8rem;
+}

@@ -1,0 +1,90 @@
+/* .popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+} */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.35); /* lighter transparent */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;        /* move popup to top */
+  padding-top: 60px;              /* top-middle spacing */
+  z-index: 2000;
+}
+
+/* .popup-box {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  text-align: left;
+} */
+.popup-box {
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  text-align: left;
+}
+
+.popup-box h2 {
+  margin: 0 0 8px 0;
+}
+
+.popup-box p {
+  margin: 0 0 12px 0;
+  color: #1a0e0e;
+}
+
+.popup-reason {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Buttons container */
+.popup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Reuse your .btn styles if available; otherwise ensure minimal polish */
+.btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-update {
+  background-color: #b80000;
+  color: white;
+}
+
+.btn-back {
+  background-color: #323c46;
+  color: white;
+}
+
+.btn[disabled],
+button[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
